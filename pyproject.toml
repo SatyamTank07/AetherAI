@@ -1,0 +1,15 @@
+[project]
+name = "mineai"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "faiss-cpu>=1.11.0",
+    "langchain>=0.3.25",
+    "langchain-community>=0.3.23",
+    "langchain-groq>=0.3.2",
+    "langchain-huggingface>=0.2.0",
+    "pypdf>=5.4.0",
+    "sentence-transformers>=4.1.0",
+]
