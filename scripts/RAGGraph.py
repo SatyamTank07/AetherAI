@@ -1,8 +1,8 @@
 from langgraph.graph import StateGraph, END
 from langchain_core.runnables import RunnableLambda
 from typing import TypedDict
-from Initialize import CInitialize
-from config import load_config
+from scripts.Initialize import CInitialize
+from scripts.config import load_config
 
 config = load_config()
 class GraphState(TypedDict):

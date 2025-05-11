@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "faiss-cpu>=1.11.0",
+    "fastapi>=0.115.12",
     "langchain>=0.3.25",
     "langchain-community>=0.3.23",
     "langchain-core>=0.3.59",
@@ -16,4 +17,5 @@ dependencies = [
     "pinecone>=6.0.2",
     "pypdf>=5.4.0",
     "sentence-transformers>=4.1.0",
+    "uvicorn>=0.34.2",
 ]

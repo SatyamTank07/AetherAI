@@ -2,8 +2,8 @@ from pathlib import Path
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_pinecone import PineconeVectorStore
-from Initialize import CInitialize
-from config import load_config
+from scripts.Initialize import CInitialize
+from scripts.config import load_config
 import hashlib
 
 class CVectorStore:

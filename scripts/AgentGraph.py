@@ -3,10 +3,10 @@ from langchain.prompts import PromptTemplate
 from typing import TypedDict
 import json
 
-from RAGGraph import CRagGraph
-from MemoryManager import CMemoryManager
-from Initialize import CInitialize
-from config import load_config
+from scripts.RAGGraph import CRagGraph
+from scripts.MemoryManager import CMemoryManager
+from scripts.Initialize import CInitialize
+from scripts.config import load_config
 
 
 # ----- Graph State -----

@@ -1,6 +1,6 @@
 from langchain.memory import VectorStoreRetrieverMemory
 from langchain_pinecone import PineconeVectorStore
-from config import load_config
+from scripts.config import load_config
 
 
 class CMemoryManager:
