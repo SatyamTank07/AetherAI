@@ -50,4 +50,5 @@ def main():
     delete_namespace(config["MineaiIndexName"], config["PINECONE_API_KEY"], config["NameSpace"])
 
 if __name__ == "__main__":
+    # Before added Frontend and Backend
     main()
