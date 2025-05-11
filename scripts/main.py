@@ -1,7 +1,6 @@
+import pinecone
 from VectorStore import CVectorStore
-from MemoryManager import CMemoryManager
-from RAGGraph import CRagGraph
-from Initialize import CInitialize
+from AgentGraph import build_agent_graph
 from pinecone import Pinecone
 from config import load_config
 config = load_config()
@@ -9,9 +8,11 @@ config = load_config()
 def delete_namespace(index_name, api_key, namespace):
     pc = Pinecone(api_key=api_key)
     index = pc.Index(index_name)
-    index.delete(delete_all=True, namespace=namespace)
-    print(f"Namespace '{namespace}' deleted from Pinecone.")
-
+    try:
+        index.delete(delete_all=True, namespace=namespace)
+        print(f"Namespace '{namespace}' deleted from Pinecone.")
+    except pinecone.core.client.exceptions.NotFoundException as e:
+        print("Namespce not found")
 def main():
     PDFPath = "Data/Docs/attention-is-all-you-need-Paper.pdf"
     
@@ -22,15 +23,9 @@ def main():
 
     if namespace is None:
         print("Using existing namespace...")
-    
-    # Initialize embeddings and memory manager
-    objInit = CInitialize()
-    embeddings = objInit.MInitializeEmbeddings()
-    memory = CMemoryManager(embeddings)
-
-    # Build LangGraph
-    objRAGGraph = CRagGraph(memory, namespace)
-    GraphApp = objRAGGraph.MBuildGraph()
+        return
+        
+    GraphApp = build_agent_graph(namespace)
     
     print("\nWelcome to MineAi Chat! Type your question or 'exit'/'quit' to stop.")
     while True:
@@ -45,10 +40,10 @@ def main():
             continue
 
         try:
-            result = GraphApp.invoke({"question": query})
+            response = GraphApp.invoke({"question": query})
             print("Answer:")
             print("----------------------------------------------")
-            print(result["answer"])
+            print(response["answer"])
         except Exception as e:
             print(f"Error: {e}")
 
