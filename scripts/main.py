@@ -1,6 +1,6 @@
 import pinecone
 from VectorStore import CVectorStore
-from AgentGraph import build_agent_graph
+from AgentGraph import AgentGraphBuilder
 from pinecone import Pinecone
 from config import load_config
 config = load_config()
@@ -25,7 +25,7 @@ def main():
         print("Using existing namespace...")
         return
         
-    GraphApp = build_agent_graph(namespace)
+    GraphApp = AgentGraphBuilder(namespace).build()
     
     print("\nWelcome to MineAi Chat! Type your question or 'exit'/'quit' to stop.")
     while True:

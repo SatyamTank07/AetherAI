@@ -8,33 +8,42 @@ from MemoryManager import CMemoryManager
 from Initialize import CInitialize
 from config import load_config
 
-# ----- Shared Setup -----
-config = load_config()
-init = CInitialize()
-llm = init.MInitializeLLM()
-embeddings = init.MInitializeEmbeddings()
-pinecone = init.MInitializePinecone(config["MineaiIndexName"])
 
-# ----- Graph State Definition -----
+# ----- Graph State -----
 class AgentGraphState(TypedDict):
     question: str
     route: str
     answer: str
+    memory: str
 
-# ----- Master Agent -----
-def build_master_agent():
-    master_prompt = PromptTemplate.from_template("""
-    You are a helpful general AI assistant.
-    Answer the following question:
-    {input}
-    """)
-    
-    return master_prompt | llm
 
-# ----- Graph Nodes -----
-def router_node(state: AgentGraphState) -> dict:
-    prompt = f"""
+# ----- AgentGraphBuilder Class -----
+class AgentGraphBuilder:
+    def __init__(self, namespace: str):
+        self.namespace = namespace
+        self.config = load_config()
+        self.init = CInitialize()
+        self.llm = self.init.MInitializeLLM()
+        self.embeddings = self.init.MInitializeEmbeddings()
+        self.pinecone = self.init.MInitializePinecone(self.config["MineaiIndexName"])
+        self.memory = CMemoryManager(self.embeddings)
+
+    def build_master_agent(self):
+        prompt = PromptTemplate.from_template("""
+        You are a helpful general AI assistant.
+        Answer the following question:
+        {input}
+        """)
+        return prompt | self.llm
+
+    def router_node(self):
+        def node(state: AgentGraphState):
+            prompt = f"""
 You are a router that selects the best agent to handle a user query.
+
+Here is Conversation History:
+{state['memory']}
+
 DO NOT GIVE ANY OTHER EXPLANATION OR OUTPUT JUST VALID JSON.
 Your output must be a valid JSON object with this format:
 {{"route": "<agent_key>"}}
@@ -42,62 +51,92 @@ Your output must be a valid JSON object with this format:
 Valid options:
 - qa: For questions related to the uploaded document
 - master: For general-purpose questions
-
-Valid agent_key values are: "qa", "master"
+- summarize: When user wants a summary of the uploaded document
+Valid agent_key values are: "qa", "master", "summarize"
 
 User Question: "{state['question']}"
-    """
-    result = llm.invoke(prompt).content.strip()
-    try:
-        route = json.loads(result).get("route", "master")
-    except Exception:
-        route = "master"
-    
-    print("[Router Output]", result, "->", route)
-    return {"route": route}
+            """
+            result = self.llm.invoke(prompt).content.strip()
+            try:
+                route = json.loads(result).get("route", "master")
+            except Exception:
+                route = "master"
+            print("[Router Output]", result, "->", route)
+            return {"route": route}
+        return node
 
-def qa_agent_node_builder(namespace):
-    memory = CMemoryManager(embeddings)
-    graph = CRagGraph(memory, namespace).MBuildGraph()
+    def qa_agent_node(self):
+        graph = CRagGraph(self.memory, self.namespace).MBuildGraph()
+        def node(state: AgentGraphState):
+            result = graph.invoke({"question": state["question"]})
+            return {"answer": result["answer"]}
+        return node
 
-    def node(state: AgentGraphState):
-        result = graph.invoke({"question": state["question"]})
-        return {"answer": result["answer"]}
-    return node
+    def master_agent_node(self):
+        master_agent = self.build_master_agent()
+        def node(state: AgentGraphState):
+            result = master_agent.invoke({"input": state["question"]})
+            return {"answer": result.content}
+        return node
 
-def master_agent_node_builder():
-    master_agent = build_master_agent()
+    def get_memory_node(self):
+        def node(state: AgentGraphState):
+            context = self.memory.MGetConversationContext(state["question"])
+            return {"memory": context}
+        return node
 
-    def node(state: AgentGraphState):
-        result = master_agent.invoke({"input": state["question"]})
-        return {"answer": result.content}
-    
-    return node
+    def save_memory_node(self):
+        def node(state: AgentGraphState):
+            self.memory.MSaveConversation(state["question"], state["answer"])
+            return {}
+        return node
 
-# ----- Build LangGraph -----
-def build_agent_graph(namespace: str):
-    graph = StateGraph(AgentGraphState)
+    def summarize_node(self):
+        index = self.pinecone.Index(self.config["MineaiIndexName"])
+        results = index.query(
+            vector=[0] * 384,
+            namespace=self.namespace,
+            top_k=20,
+            include_metadata=True
+        )
+        all_texts = [m["metadata"].get("text", "") for m in results["matches"]]
+        document_text = "\n".join(all_texts)
 
-    graph.add_node("router", router_node)
-    graph.add_node("qa", qa_agent_node_builder(namespace))
-    graph.add_node("master", master_agent_node_builder())
+        def node(state: AgentGraphState):
+            prompt = f"Summarize the following document:\n\n{document_text}"
+            summary = self.llm.invoke(prompt).content
+            return {"answer": summary}
+        return node
 
-    graph.set_entry_point("router")
+    def build(self):
+        graph = StateGraph(AgentGraphState)
 
-    # Route based on 'route' key from router node
-    def route_condition(state: AgentGraphState):
-        return state["route"]
+        graph.add_node("get_memory", self.get_memory_node())
+        graph.add_node("router", self.router_node())
+        graph.add_node("qa", self.qa_agent_node())
+        graph.add_node("master", self.master_agent_node())
+        graph.add_node("summarize", self.summarize_node())
+        graph.add_node("save_memory", self.save_memory_node())
 
-    graph.add_conditional_edges(
-        "router",
-        route_condition,
-        {
-            "qa": "qa",
-            "master": "master"
-        },
-    )
+        graph.set_entry_point("get_memory")
+        graph.add_edge("get_memory", "router")
 
-    graph.add_edge("qa", END)
-    graph.add_edge("master", END)
+        def route_condition(state: AgentGraphState):
+            return state["route"]
 
-    return graph.compile()
+        graph.add_conditional_edges(
+            "router",
+            route_condition,
+            {
+                "qa": "qa",
+                "master": "master",
+                "summarize": "summarize"
+            },
+        )
+
+        graph.add_edge("qa", "save_memory")
+        graph.add_edge("master", "save_memory")
+        graph.add_edge("summarize", "save_memory")
+        graph.add_edge("save_memory", END)
+
+        return graph.compile()
