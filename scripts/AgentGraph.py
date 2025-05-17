@@ -15,6 +15,7 @@ class AgentGraphState(TypedDict):
     route: str
     answer: str
     memory: str
+    selected_files: list[str]  
 
 
 # ----- AgentGraphBuilder Class -----
@@ -30,6 +31,7 @@ class AgentGraphBuilder:
 
     def build_master_agent(self):
         prompt = PromptTemplate.from_template("""
+        EVERY TIME YOU ANSWER MUST SAY "I AM A GENERAL AGENT"
         You are a helpful general AI assistant.
         Answer the following question:
         {input}
@@ -38,32 +40,15 @@ class AgentGraphBuilder:
 
     def router_node(self):
         def node(state: AgentGraphState):
-            prompt = f"""
-You are a router that selects the best agent to handle a user query.
-
-Here is Conversation History:
-{state['memory']}
-
-DO NOT GIVE ANY OTHER EXPLANATION OR OUTPUT JUST VALID JSON.
-Your output must be a valid JSON object with this format:
-{{"route": "<agent_key>"}}
-
-Valid options:
-- qa: For questions related to the uploaded document
-- master: For general-purpose questions
-- summarize: When user wants a summary of the uploaded document
-Valid agent_key values are: "qa", "master", "summarize"
-
-User Question: "{state['question']}"
-            """
-            result = self.llm.invoke(prompt).content.strip()
-            try:
-                route = json.loads(result).get("route", "master")
-            except Exception:
+            # If files are selected, use QA agent
+            if state.get("selected_files"):
+                route = "qa"
+            else:
                 route = "master"
-            print("[Router Output]", result, "->", route)
+            print(f"[Auto Route Decision] Selected Files: {state.get('selected_files')} -> {route}")
             return {"route": route}
         return node
+
 
     def qa_agent_node(self):
         graph = CRagGraph(self.memory, self.namespace).MBuildGraph()
@@ -103,7 +88,7 @@ User Question: "{state['question']}"
         document_text = "\n".join(all_texts)
 
         def node(state: AgentGraphState):
-            prompt = f"Summarize the following document:\n\n{document_text}"
+            prompt = f"EVERY TIME YOU ANSWER MUST SAY I AM A SUMMARY AGENT' \nSummarize the following document:\n\n{document_text}"
             summary = self.llm.invoke(prompt).content
             return {"answer": summary}
         return node

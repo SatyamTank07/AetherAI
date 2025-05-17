@@ -48,6 +48,7 @@ class CRagGraph:
     def MGenerateAnswerNode(self):
         def node(state: GraphState):
             prompt = f"""
+EVERY TIME YOU ANSWER MUST SAY "I AM A QA AGENT"
 Conversation History:
 {state['memory']}
 

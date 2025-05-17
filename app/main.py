@@ -1,5 +1,5 @@
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import UploadFile, File
@@ -9,6 +9,7 @@ from scripts.AgentGraph import AgentGraphBuilder
 from scripts.VectorStore import CVectorStore
 
 app = FastAPI()
+selected_files = []
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,11 +36,6 @@ def ensure_graph_loaded():
         print("Loaded namespace:", namespace)
         graph_app = AgentGraphBuilder(namespace).build()
 
-@app.post("/chat")
-def chat(request: ChatRequest):
-    ensure_graph_loaded()
-    result = graph_app.invoke({"question": request.question})
-    return {"answer": result["answer"]}
 
 @app.post("/upload")
 def upload_file(file: UploadFile = File(...)):
@@ -57,4 +53,17 @@ def list_files():
     files = [f.name for f in Path(UPLOAD_DIR).glob("*.pdf")]
     return {"files": files}
 
+@app.post("/selected-files")
+async def set_selected_files(request: Request):
+    global selected_files
+    data = await request.json()
+    print("Selected files:", data.get("files", []))
+    selected_files = data.get("files", []) 
+    return {"status": "received"}
+
+@app.post("/chat")
+def chat(request: ChatRequest):
+    ensure_graph_loaded()
+    result = graph_app.invoke({"question": request.question, "selected_files": selected_files})
+    return {"answer": result["answer"]}
 # uvicorn app.main:app --reload

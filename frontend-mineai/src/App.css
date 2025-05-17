@@ -134,7 +134,7 @@ input {
   border-radius: 10px;
 }
 
-/* .tab-button-files.active {
+.tab-button-files.active {
   background-color: #926eff;
   color: white;
-} */
+}

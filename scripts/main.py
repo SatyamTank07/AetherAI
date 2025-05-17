@@ -40,7 +40,7 @@ def main():
             continue
 
         try:
-            response = GraphApp.invoke({"question": query})
+            response = GraphApp.invoke({"question": query, "selected_files": selected_files })
             print("Answer:")
             print("----------------------------------------------")
             print(response["answer"])
