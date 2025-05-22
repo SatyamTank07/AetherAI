@@ -14,6 +14,7 @@ class CVectorStore:
 
     def MLoadAndSplitDocuments(self, PDFPath):
         """Load PDF and split into chunks with metadata."""
+        # NOTE : Make diffrant for all : load - split - HASH - METADATA 
         loader = PyPDFLoader(PDFPath)
         documents = loader.load()
 
@@ -35,6 +36,8 @@ class CVectorStore:
 
     def MInitializeFileInVectorDB(self, obj_pinecone, embeddings, chunks, file_hash):
         """Initialize vector store under namespace derived from file hash."""
+        # NOTE : Make diffrant for all : CheckDuplicate - Store 
+        # NOTE : Return Some Valid and good
         namespace = file_hash
         mine_index = obj_pinecone.Index(self.MineaiIndexName)
 
