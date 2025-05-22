@@ -1,20 +1,11 @@
 from helper.logConfig import get_logger
-import pinecone
 from VectorStore import CVectorStore
 from AgentGraph import AgentGraphBuilder
-from pinecone import Pinecone
 from config import load_config
 config = load_config()
 logger = get_logger("main")
 logger.info("Main script started")
-def delete_namespace(index_name, api_key, namespace):
-    pc = Pinecone(api_key=api_key)
-    index = pc.Index(index_name)
-    try:
-        index.delete(delete_all=True, namespace=namespace)
-        print(f"Namespace '{namespace}' deleted from Pinecone.")
-    except pinecone.core.client.exceptions.NotFoundException as e:
-        print("Namespce not found")
+
 def main():
     PDFPath = "Data/Docs/attention-is-all-you-need-Paper.pdf"
     
