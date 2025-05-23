@@ -1,7 +1,8 @@
 from helper.logConfig import get_logger
 from VectorStore import CVectorStore
-from AgentGraph import AgentGraphBuilder
+# from AgentGraph import AgentGraphBuilder
 from config import load_config
+from helper.vectorDB import DeleteNamespace
 config = load_config()
 logger = get_logger("main")
 logger.info("Main script started")
@@ -18,7 +19,7 @@ def main():
         print("Using existing namespace...")
         return
         
-    GraphApp = AgentGraphBuilder(namespace).build()
+    # GraphApp = AgentGraphBuilder(namespace).build()
     
     print("\nWelcome to MineAi Chat! Type your question or 'exit'/'quit' to stop.")
     while True:
@@ -33,14 +34,14 @@ def main():
             continue
 
         try:
-            response = GraphApp.invoke({"question": query, "selected_files": selected_files })
+            # response = GraphApp.invoke({"question": query, "selected_files": selected_files })
             print("Answer:")
             print("----------------------------------------------")
-            print(response["answer"])
+            # print(response["answer"])
         except Exception as e:
             print(f"Error: {e}")
 
-    delete_namespace(config["MineaiIndexName"], config["PINECONE_API_KEY"], config["NameSpace"])
+    DeleteNamespace(config["MineaiIndexName"], config["PINECONE_API_KEY"], config["NameSpace"])
 
 if __name__ == "__main__":
     # Before added Frontend and Backend

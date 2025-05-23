@@ -1,8 +1,10 @@
 from pathlib import Path
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, UploadFile, File, Header, HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import UploadFile, File
+import google.oauth2.id_token
+import google.auth.transport.requests
+from motor.motor_asyncio import AsyncIOMotorClient
 import os
 
 from scripts.AgentGraph import AgentGraphBuilder
@@ -10,6 +12,10 @@ from scripts.VectorStore import CVectorStore
 
 app = FastAPI()
 selected_files = []
+
+mongo_client = AsyncIOMotorClient("mongodb+srv://satyamtank03:oBYC5Jy75dClHqNc@mineai.ghhwsqx.mongodb.net/?retryWrites=true&w=majority&appName=mineai")
+mongo_db = mongo_client["mineai"]
+users_col = mongo_db["users"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -66,4 +72,35 @@ def chat(request: ChatRequest):
     ensure_graph_loaded()
     result = graph_app.invoke({"question": request.question, "selected_files": selected_files})
     return {"answer": result["answer"]}
+
+@app.post("/auth/google")
+async def auth_google(authorization: str = Header(...)):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+
+    token = authorization.split(" ")[1]
+    try:
+        request = google.auth.transport.requests.Request()
+        id_info = google.oauth2.id_token.verify_oauth2_token(token, request)
+
+        user_data = {
+            "_id": id_info["sub"],
+            "email": id_info["email"],
+            "name": id_info.get("name", ""),
+            "picture": id_info.get("picture", "")
+        }
+
+        # Update or insert user in MongoDB (motor version)
+        await users_col.update_one(
+            {"_id": user_data["_id"]},
+            {"$set": user_data},
+            upsert=True
+        )
+
+        return {"message": "Login success", "user": user_data}
+
+    except Exception as e:
+        print("OAuth Error:", e)
+        raise HTTPException(status_code=401, detail="Invalid token")
+
 # uvicorn app.main:app --reload

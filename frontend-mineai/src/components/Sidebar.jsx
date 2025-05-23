@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
+import { useUser } from "./UserContext";
+import LoginButton from "./LoginButton";
 
 function Sidebar() {
+  const { user } = useUser();
   const [activeTab, setActiveTab] = useState("files");
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -40,6 +43,11 @@ function Sidebar() {
     <div className="sidebar">
       <div className="sidebar-header">
         <h2>MineAI Chat</h2>
+        {user ? (
+          <img src={user.picture} alt="avatar" style={{ width: 40, borderRadius: "50%" }} />
+        ) : (
+          <LoginButton />
+        )}
       </div>
 
       <div className="tabs">

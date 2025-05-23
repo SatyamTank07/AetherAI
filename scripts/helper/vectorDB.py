@@ -6,7 +6,7 @@ from logConfig import get_logger
 logger = get_logger("helper.vectorDB")
 
 
-def MDeleteNamespace(index_name, namespace):
+def DeleteNamespace(index_name, namespace):
     """
     Delete a namespace from a Pinecone index.
 

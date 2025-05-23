@@ -38,14 +38,14 @@ function ChatComponent() {
       {loading && <p className="loading">Thinking...</p>}
 
       <div className="input-area">
-        {/* <button className="plus-btn">+</button> */}
+        <button className="plus-btn">Upload File</button>
         <input
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && askQuestion()}
           placeholder="Ask something..."
         />
-        <button onClick={askQuestion}>➤</button>
+        <button onClick={askQuestion}>Send</button>
       </div>
     </div>
   );
