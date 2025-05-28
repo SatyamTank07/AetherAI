@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
-import { useUser } from "./UserContext";
-import LoginButton from "./LoginButton";
+import AuthSection from "./AuthSection";
 
 function Sidebar() {
-  const { user } = useUser();
   const [activeTab, setActiveTab] = useState("files");
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -43,22 +41,18 @@ function Sidebar() {
     <div className="sidebar">
       <div className="sidebar-header">
         <h2>MineAI Chat</h2>
-        {user ? (
-          <img src={user.picture} alt="avatar" style={{ width: 40, borderRadius: "50%" }} />
-        ) : (
-          <LoginButton />
-        )}
+        <AuthSection />
       </div>
 
       <div className="tabs">
         {/* History tab (not implemented yet) */}
-        {/* 
+        {/*
         <button
           className={`tab-button ${activeTab === "history" ? "active" : ""}`}
           onClick={() => setActiveTab("history")}
         >
           History
-        </button> 
+        </button>
         */}
         <button
           className={`tab-button ${activeTab === "files" ? "active" : ""}`}

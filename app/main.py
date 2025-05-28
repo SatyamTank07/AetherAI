@@ -1,6 +1,7 @@
 from pathlib import Path
 from fastapi import FastAPI, Request, UploadFile, File, Header, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
+
 from fastapi.middleware.cors import CORSMiddleware
 import google.oauth2.id_token
 import google.auth.transport.requests
@@ -13,10 +14,15 @@ from scripts.VectorStore import CVectorStore
 app = FastAPI()
 selected_files = []
 
-mongo_client = AsyncIOMotorClient("mongodb+srv://satyamtank03:oBYC5Jy75dClHqNc@mineai.ghhwsqx.mongodb.net/?retryWrites=true&w=majority&appName=mineai")
+mongo_client = AsyncIOMotorClient(os.getenv("MONGODB_URI"))
 mongo_db = mongo_client["mineai"]
 users_col = mongo_db["users"]
 
+class UserResponse(BaseModel):
+    email: EmailStr
+    name: str
+    picture: str
+    
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # You can replace with actual domain
@@ -73,15 +79,16 @@ def chat(request: ChatRequest):
     result = graph_app.invoke({"question": request.question, "selected_files": selected_files})
     return {"answer": result["answer"]}
 
-@app.post("/auth/google")
+@app.post("/auth/google", response_model=UserResponse)
 async def auth_google(authorization: str = Header(...)):
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Invalid authorization header")
 
     token = authorization.split(" ")[1]
     try:
+        GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
         request = google.auth.transport.requests.Request()
-        id_info = google.oauth2.id_token.verify_oauth2_token(token, request)
+        id_info = google.oauth2.id_token.verify_oauth2_token(token, request, audience=GOOGLE_CLIENT_ID)
 
         user_data = {
             "_id": id_info["sub"],
@@ -99,8 +106,11 @@ async def auth_google(authorization: str = Header(...)):
 
         return {"message": "Login success", "user": user_data}
 
+    except ValueError as e:
+    # Token format issues
+        raise HTTPException(status_code=400, detail="Invalid token format")
     except Exception as e:
-        print("OAuth Error:", e)
-        raise HTTPException(status_code=401, detail="Invalid token")
+        # Other OAuth issues
+        raise HTTPException(status_code=401, detail="Token verification failed")
 
-# uvicorn app.main:app --reload
+# uvicorn app.main:app --reload 
