@@ -1,5 +1,5 @@
 {
-    "MineaiIndexName": "mineai",
+    "MINEAI_INDEX_NAME": "mineai",
     "EmbeddingModel": "sentence-transformers/all-MiniLM-L6-v2",
     "LLM_Model": "llama3-8b-8192",
     "NameSpace": "conversation-history"

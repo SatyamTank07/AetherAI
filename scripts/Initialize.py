@@ -1,7 +1,7 @@
 from langchain_huggingface import HuggingFaceEmbeddings
 from pinecone import Pinecone, ServerlessSpec
 from langchain_groq import ChatGroq
-from scripts.config import load_config
+from config import load_config
 import time
 
 class CInitialize():
