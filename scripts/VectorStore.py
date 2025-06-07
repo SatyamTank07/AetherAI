@@ -63,7 +63,7 @@ class CVectorStore:
         return self.MCreateChunks(documents)
 
     def MStoreInPineconeDB(self, embedding, chunks: list, FileHash: str):
-        """Store chunks in Pinecone."""
+        """NOTE : Store chunks in Pinecone."""
         try:
             res = PineconeVectorStore.from_documents(
                 documents=chunks,

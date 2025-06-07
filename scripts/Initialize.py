@@ -17,21 +17,21 @@ class CInitialize():
         """Initialize the embedding model."""
         return HuggingFaceEmbeddings(model_name=self.EmbeddingModel)
     
-    def MInitializePinecone(self, MineaiIndexName):
+    def MInitializePinecone(self, IndexName):
         """Initialize Pinecone and create index if it doesn't exist."""
         
         objPinecone = Pinecone(api_key=self.PINECONE_API_KEY)
         # NOTE  : Parameter Dynamic
-        if MineaiIndexName not in objPinecone.list_indexes().names():
+        if IndexName not in objPinecone.list_indexes().names():
             objPinecone.create_index(
-                name=MineaiIndexName,
+                name=IndexName,
                 dimension=384,
                 metric="cosine",
                 spec=ServerlessSpec(cloud="aws", region="us-east-1")
             )
             time.sleep(5)
         
-        return objPinecone
+        return objPinecone.Index(IndexName)
     
     def MInitializeLLM(self):
         """Initialize the LLM with Groq API."""
