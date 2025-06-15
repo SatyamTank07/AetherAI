@@ -8,7 +8,7 @@ function ChatComponent({ session }) {
   const { user } = useUser();
   const fileInputRef = useRef(null);
   const [uploadMsg, setUploadMsg] = useState("");
-  // const endOfMessagesRef = useRef(null);
+  const chatBoxRef = useRef(null);
 
   // Load messages when session changes
   useEffect(() => {
@@ -22,11 +22,12 @@ function ChatComponent({ session }) {
   }, [session]);
 
   // Scroll to bottom when messages change
-  // useEffect(() => {
-  //   if (endOfMessagesRef.current) {
-  //     endOfMessagesRef.current.scrollIntoView({ behavior: "smooth" });
-  //   }
-  // }, [messages]);
+  useEffect(() => {
+    if (chatBoxRef.current) {
+      // Scroll to bottom of the chat box container
+      chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const askQuestion = async () => {
     if (!question.trim() || !user) return;
@@ -131,13 +132,12 @@ function ChatComponent({ session }) {
 
   return (
     <div className="chat-area">
-      <div className="chat-box">
+      <div className="chat-box" ref={chatBoxRef}>
         {messages.map((msg, i) => (
           <div key={i} className={`msg ${msg.role === "user" ? "user" : "bot"}`}>
             {msg.text}
           </div>
         ))}
-        {/* <div ref={endOfMessagesRef} /> */}
       </div>
 
       {loading && <p className="loading">Thinking...</p>}
