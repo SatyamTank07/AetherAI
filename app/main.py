@@ -1,5 +1,5 @@
 from pathlib import Path
-from fastapi import FastAPI, Request, UploadFile, File, Header, HTTPException
+from fastapi import FastAPI, Request, UploadFile, File, Header, HTTPException, Form
 from pydantic import BaseModel, EmailStr
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,6 +7,9 @@ import google.oauth2.id_token
 import google.auth.transport.requests
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
+import boto3
+from botocore.client import Config
+import io
 
 from scripts.AgentGraph import AgentGraphBuilder
 from scripts.VectorStore import CVectorStore
@@ -50,15 +53,54 @@ def ensure_graph_loaded():
 
 
 @app.post("/upload")
-def upload_file(file: UploadFile = File(...)):
-    file_path = Path(UPLOAD_DIR) / file.filename
+async def upload_file(
+    file: UploadFile = File(...),
+    name: str = Form(...),
+    email: str = Form(...),
+    picture: str = Form(None)
+):
+    # Cloudflare R2 credentials from environment
+    R2_ACCESS_KEY_ID = os.getenv("R2_ACCESS_KEY_ID")
+    R2_SECRET_ACCESS_KEY = os.getenv("R2_SECRET_ACCESS_KEY")
+    R2_ENDPOINT = os.getenv("R2_ENDPOINT")
+    R2_BUCKET_NAME = os.getenv("R2_BUCKET_NAME")
 
-    with open(file_path, "wb") as f:
-        f.write(file.file.read())
+    # Read file content
+    file_content = await file.read()
+    file_size = len(file_content)
 
-    vector = CVectorStore()
-    status, namespace = vector.MStoreFileInVectorDB(str(file_path))
-    return {"message": status, "namespace": namespace}
+    # Upload to R2
+    session = boto3.session.Session()
+    s3 = session.client(
+        service_name="s3",
+        aws_access_key_id=R2_ACCESS_KEY_ID,
+        aws_secret_access_key=R2_SECRET_ACCESS_KEY,
+        endpoint_url=R2_ENDPOINT,
+        config=Config(signature_version="s3v4")
+    )
+    s3.upload_fileobj(
+        Fileobj=io.BytesIO(file_content),
+        Bucket=R2_BUCKET_NAME,
+        Key=file.filename
+    )
+    r2_url = f"{os.getenv('R2_PUBLIC_DOMAIN').rstrip('/')}/{file.filename}"
+
+    # Store metadata in MongoDB
+    file_doc = {
+        "user": {
+            "name": name,
+            "email": email,
+            "picture": picture
+        },
+        "file": {
+            "filename": file.filename,
+            "url": r2_url,
+            "size": file_size
+        }
+    }
+    await mongo_db["uploads"].insert_one(file_doc)
+
+    return {"message": "File uploaded to R2 and metadata saved.", "file": file_doc["file"]}
 
 @app.get("/files")
 def list_files():

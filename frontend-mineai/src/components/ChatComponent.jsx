@@ -48,6 +48,9 @@ function ChatComponent() {
     setUploadMsg("Uploading...");
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("name", user.name);
+    formData.append("email", user.email);
+    formData.append("picture", user.picture || "");
 
     try {
       const res = await fetch("http://localhost:8000/upload", {
@@ -56,8 +59,10 @@ function ChatComponent() {
       });
       const data = await res.json();
       setUploadMsg(data.message || "Upload complete.");
+      setTimeout(() => setUploadMsg(""), 3000);
     } catch {
       setUploadMsg("Upload failed.");
+      setTimeout(() => setUploadMsg(""), 3000);
     }
     e.target.value = ""; // reset input
   };
