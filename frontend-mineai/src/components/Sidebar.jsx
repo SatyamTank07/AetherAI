@@ -1,28 +1,34 @@
 import { useState, useEffect } from "react";
 import AuthSection from "./AuthSection";
+import { useUser } from "./UserContext";
 
 function Sidebar() {
   const [activeTab, setActiveTab] = useState("files");
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
+  const { user } = useUser();
 
-  // Fetch uploaded files from backend
+  // Fetch uploaded files for the logged-in user
   const fetchFiles = async () => {
-    const res = await fetch("http://localhost:8000/files");
+    if (!user) {
+      setUploadedFiles([]);
+      return;
+    }
+    const res = await fetch(`http://localhost:8000/my-files?email=${encodeURIComponent(user.email)}`);
     const data = await res.json();
-    setUploadedFiles(data.files);
+    setUploadedFiles(data.files || []);
   };
 
   useEffect(() => {
     fetchFiles();
-  }, []);
+  }, [user]);
 
   // Toggle file selection
-  const handleFileSelect = (file) => {
-    const isSelected = selectedFiles.includes(file);
+  const handleFileSelect = (filename) => {
+    const isSelected = selectedFiles.includes(filename);
     const newSelection = isSelected
-      ? selectedFiles.filter((f) => f !== file) // Deselect
-      : [...selectedFiles, file];              // Select
+      ? selectedFiles.filter((f) => f !== filename) // Deselect
+      : [...selectedFiles, filename];              // Select
 
     setSelectedFiles(newSelection);
     sendSelectedFilesToBackend(newSelection);
@@ -78,12 +84,11 @@ function Sidebar() {
             {uploadedFiles.map((file, i) => (
               <li
                 key={i}
-                className={`tab-button-files ${
-                  selectedFiles.includes(file) ? "active" : ""
-                }`}
-                onClick={() => handleFileSelect(file)}
+                className={`tab-button-files ${selectedFiles.includes(file.filename) ? "active" : ""}`}
+                onClick={() => handleFileSelect(file.filename)}
               >
-                {file}
+                <u><a href={file.url} target="_blank" rel="noopener noreferrer">{file.filename}</a></u>
+                <span> ({(file.size/1024).toFixed(1)} KB)</span>
               </li>
             ))}
           </ul>

@@ -1,5 +1,5 @@
 from pathlib import Path
-from fastapi import FastAPI, Request, UploadFile, File, Header, HTTPException, Form
+from fastapi import FastAPI, Request, UploadFile, File, Header, HTTPException, Form, Query
 from pydantic import BaseModel, EmailStr
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -158,5 +158,11 @@ async def auth_google(authorization: str = Header(...)):
     except Exception as e:
         # Other OAuth issues
         raise HTTPException(status_code=401, detail="Token verification failed")
+
+@app.get("/my-files")
+async def get_my_files(email: str = Query(...)):
+    files = await mongo_db["uploads"].find({"user.email": email}).to_list(length=100)
+    # Return only file info, not user info
+    return {"files": [f["file"] for f in files]}
 
 # uvicorn app.main:app --reload

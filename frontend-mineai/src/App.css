@@ -138,3 +138,31 @@ input {
   background-color: #926eff;
   color: white;
 }
+
+.tab-button-files {
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 4px;
+  color: #222;
+  background: none;
+  transition: background 0.2s, color 0.2s;
+}
+
+.tab-button-files.active {
+  background: #6741d9;
+  /* Blue background for selected */
+  color: #fff !important;
+  /* White text for selected */
+  font-weight: bold;
+}
+
+.tab-button-files a {
+  color: inherit;
+  /* Inherit color from li */
+  text-decoration: none;
+}
+
+.tab-button-files.active a {
+  color: #fff !important;
+  /* White link text when selected */
+}
