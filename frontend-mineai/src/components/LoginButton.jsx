@@ -1,5 +1,6 @@
 import { GoogleLogin } from "@react-oauth/google";
 import { useUser } from "./UserContext";
+import GoogleIcon from "./GoogleIcon";
 
 function LoginButton() {
   const { setUser } = useUser();
@@ -15,11 +16,14 @@ function LoginButton() {
         });
 
         const data = await res.json();
-        setUser(data.user); // { email, name, picture, sub }
+        setUser(data); // { email, name, picture }
       }}
       onError={() => {
         alert("Login Failed");
       }}
+      type="icon"
+      shape="circle"
+      theme="outline"
     />
   );
 }

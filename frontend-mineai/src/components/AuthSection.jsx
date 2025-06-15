@@ -1,4 +1,3 @@
-// AuthSection.jsx
 import { useState, useEffect } from "react";
 import { useUser } from "./UserContext";
 import LoginButton from "./LoginButton";
@@ -35,7 +34,7 @@ function AuthSection() {
             style={{ cursor: "pointer", position: "relative" }}
           >
             <img
-              src={user.picture}
+              src={user.picture || "/frontend-mineai/src/assets/user-icon.png"}
               alt="avatar"
               style={{ width: 40, height: 40, borderRadius: "50%" }}
             />
@@ -98,12 +97,8 @@ function AuthSection() {
                   fontSize: "14px",
                   transition: "background 0.2s",
                 }}
-                onMouseOver={(e) =>
-                  (e.target.style.background = "#cc0000")
-                }
-                onMouseOut={(e) =>
-                  (e.target.style.background = "#ff4444")
-                }
+                onMouseOver={(e) => (e.target.style.background = "#cc0000")}
+                onMouseOut={(e) => (e.target.style.background = "#ff4444")}
               >
                 Logout
               </button>

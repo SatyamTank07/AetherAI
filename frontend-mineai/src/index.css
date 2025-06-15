@@ -54,6 +54,30 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+/* Google Login Button Styles */
+.google-login-button {
+  background-color: white;
+  border: 1px solid #dadce0;
+  border-radius: 50%;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.google-login-button:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transform: translateY(-1px);
+}
+
+.google-login-button:active {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  transform: translateY(0);
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;

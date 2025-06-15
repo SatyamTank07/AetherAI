@@ -104,7 +104,11 @@ async def auth_google(authorization: str = Header(...)):
             upsert=True
         )
 
-        return {"message": "Login success", "user": user_data}
+        return {
+            "email": user_data["email"],
+            "name": user_data["name"],
+            "picture": user_data["picture"]
+        }
 
     except ValueError as e:
     # Token format issues
@@ -113,4 +117,4 @@ async def auth_google(authorization: str = Header(...)):
         # Other OAuth issues
         raise HTTPException(status_code=401, detail="Token verification failed")
 
-# uvicorn app.main:app --reload 
+# uvicorn app.main:app --reload

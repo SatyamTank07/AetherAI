@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { useUser } from "./UserContext";
 
 function ChatComponent() {
   const [messages, setMessages] = useState([]);
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
+  const { user } = useUser();
+  const fileInputRef = useRef(null);
+  const [uploadMsg, setUploadMsg] = useState("");
 
   const askQuestion = async () => {
     if (!question.trim()) return;
@@ -25,6 +29,39 @@ function ChatComponent() {
     setLoading(false);
   };
 
+  const handleUploadBtn = () => {
+    if (!user) {
+      setUploadMsg("Please log in to upload files.");
+      return;
+    }
+    setUploadMsg("");
+    fileInputRef.current.click();
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      setUploadMsg("Only PDF files are allowed.");
+      return;
+    }
+    setUploadMsg("Uploading...");
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("http://localhost:8000/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      setUploadMsg(data.message || "Upload complete.");
+    } catch {
+      setUploadMsg("Upload failed.");
+    }
+    e.target.value = ""; // reset input
+  };
+
   return (
     <div className="chat-area">
       <div className="chat-box">
@@ -36,9 +73,19 @@ function ChatComponent() {
       </div>
 
       {loading && <p className="loading">Thinking...</p>}
+      {uploadMsg && <p className="upload-msg">{uploadMsg}</p>}
 
       <div className="input-area">
-        <button className="plus-btn">Upload File</button>
+        <button className="plus-btn" onClick={handleUploadBtn}>
+          Upload File
+        </button>
+        <input
+          type="file"
+          accept="application/pdf"
+          style={{ display: "none" }}
+          ref={fileInputRef}
+          onChange={handleFileChange}
+        />
         <input
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
