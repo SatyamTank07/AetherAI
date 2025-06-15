@@ -1,30 +1,92 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useUser } from "./UserContext";
 
-function ChatComponent() {
+function ChatComponent({ session }) {
   const [messages, setMessages] = useState([]);
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const { user } = useUser();
   const fileInputRef = useRef(null);
   const [uploadMsg, setUploadMsg] = useState("");
+  // const endOfMessagesRef = useRef(null);
+
+  // Load messages when session changes
+  useEffect(() => {
+    if (session && session.id) {
+      fetch(`http://localhost:8000/chat-session/${session.id}`)
+        .then(res => res.json())
+        .then(data => setMessages(data.messages || []));
+    } else {
+      setMessages([]);
+    }
+  }, [session]);
+
+  // Scroll to bottom when messages change
+  // useEffect(() => {
+  //   if (endOfMessagesRef.current) {
+  //     endOfMessagesRef.current.scrollIntoView({ behavior: "smooth" });
+  //   }
+  // }, [messages]);
 
   const askQuestion = async () => {
-    if (!question.trim()) return;
-    setMessages((prev) => [...prev, { type: "user", text: question }]);
+    if (!question.trim() || !user) return;
+    setMessages((prev) => [...prev, { role: "user", text: question }]);
     setQuestion("");
     setLoading(true);
 
+    let sessionId = session && session.id;
+    let answer = "";
     try {
+      // Send user message to backend (create session if needed)
+      if (!sessionId) {
+        // Create new session
+        const res = await fetch("http://localhost:8000/chat-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: user.email,
+            title: `Session ${new Date().toLocaleString()}`,
+            message: { role: "user", text: question }
+          })
+        });
+        const data = await res.json();
+        sessionId = data.id;
+        // Optionally, reload sessions in parent
+      } else {
+        // Add message to existing session
+        await fetch(`http://localhost:8000/chat-session/${sessionId}/message`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: user.email,
+            message: { role: "user", text: question }
+          })
+        });
+      }
+
+      // Get AI answer (simulate or call your /chat endpoint)
       const res = await fetch("http://localhost:8000/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question }),
+        body: JSON.stringify({ question })
       });
       const data = await res.json();
-      setMessages((prev) => [...prev, { type: "bot", text: data.answer }]);
+      answer = data.answer;
+      setMessages((prev) => [...prev, { role: "ai", text: answer }]);
+
+      // Save AI answer to session
+      if (sessionId) {
+        await fetch(`http://localhost:8000/chat-session/${sessionId}/message`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: user.email,
+            message: { role: "ai", text: answer }
+          })
+        });
+      }
     } catch {
-      setMessages((prev) => [...prev, { type: "bot", text: "Error." }]);
+      setMessages((prev) => [...prev, { role: "ai", text: "Error." }]);
     }
     setLoading(false);
   };
@@ -71,10 +133,11 @@ function ChatComponent() {
     <div className="chat-area">
       <div className="chat-box">
         {messages.map((msg, i) => (
-          <div key={i} className={`msg ${msg.type}`}>
+          <div key={i} className={`msg ${msg.role === "user" ? "user" : "bot"}`}>
             {msg.text}
           </div>
         ))}
+        {/* <div ref={endOfMessagesRef} /> */}
       </div>
 
       {loading && <p className="loading">Thinking...</p>}
