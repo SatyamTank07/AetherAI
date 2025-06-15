@@ -59,17 +59,33 @@ async def upload_file(
     email: str = Form(...),
     picture: str = Form(None)
 ):
-    # Cloudflare R2 credentials from environment
+    # Save file temporarily in memory
+    file_content = await file.read()
+    file_size = len(file_content)
+
+    # Store in vector DB (Pinecone)
+    vector = CVectorStore()
+    # Save to a temp file for vector DB (since your vector logic expects a file path)
+    import tempfile
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        tmp.write(file_content)
+        tmp_path = tmp.name
+
+    status, namespace = vector.MStoreFileInVectorDB(tmp_path)
+
+    # Clean up temp file
+    import os
+    os.remove(tmp_path)
+
+    if not status:
+        return {"error": "Failed to store file in vector DB. Upload aborted."}
+
+    # If vector DB storage succeeded, upload to R2
     R2_ACCESS_KEY_ID = os.getenv("R2_ACCESS_KEY_ID")
     R2_SECRET_ACCESS_KEY = os.getenv("R2_SECRET_ACCESS_KEY")
     R2_ENDPOINT = os.getenv("R2_ENDPOINT")
     R2_BUCKET_NAME = os.getenv("R2_BUCKET_NAME")
 
-    # Read file content
-    file_content = await file.read()
-    file_size = len(file_content)
-
-    # Upload to R2
     session = boto3.session.Session()
     s3 = session.client(
         service_name="s3",
@@ -95,12 +111,13 @@ async def upload_file(
         "file": {
             "filename": file.filename,
             "url": r2_url,
-            "size": file_size
+            "size": file_size,
+            "namespace": namespace
         }
     }
     await mongo_db["uploads"].insert_one(file_doc)
 
-    return {"message": "File uploaded to R2 and metadata saved.", "file": file_doc["file"]}
+    return {"message": "File uploaded to vector DB, R2, and metadata saved.", "file": file_doc["file"]}
 
 @app.get("/files")
 def list_files():
