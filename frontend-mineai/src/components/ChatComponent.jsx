@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useUser } from "./UserContext";
+import ReactMarkdown from "react-markdown";
 
 function ChatComponent({ session }) {
   const [messages, setMessages] = useState([]);
@@ -52,6 +53,8 @@ function ChatComponent({ session }) {
         });
         const data = await res.json();
         sessionId = data.id;
+        // Save new session to localStorage
+        localStorage.setItem("currentSession", JSON.stringify({ id: sessionId, title: `Session ${new Date().toLocaleString()}` }));
         // Optionally, reload sessions in parent
       } else {
         // Add message to existing session
@@ -135,7 +138,12 @@ function ChatComponent({ session }) {
       <div className="chat-box" ref={chatBoxRef}>
         {messages.map((msg, i) => (
           <div key={i} className={`msg ${msg.role === "user" ? "user" : "bot"}`}>
-            {msg.text}
+            {msg.role === "ai" ? (
+              // Render AI message as markdown
+              <ReactMarkdown>{msg.text}</ReactMarkdown>
+            ) : (
+              msg.text
+            )}
           </div>
         ))}
       </div>
