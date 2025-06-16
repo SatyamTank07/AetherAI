@@ -3,6 +3,7 @@ from fastapi import FastAPI, Request, UploadFile, File, Header, HTTPException, F
 from pydantic import BaseModel, EmailStr
 from bson import ObjectId
 from datetime import datetime
+from typing import Optional
 
 from fastapi.middleware.cors import CORSMiddleware
 import google.oauth2.id_token
@@ -206,13 +207,13 @@ async def add_message_to_session(
 async def create_chat_session(
     email: str = Body(...),
     title: str = Body("Untitled"),
-    message: dict = Body(...)
+    message: Optional[dict] = Body(None)
 ):
     doc = {
         "user_email": email,
         "title": title,
         "created_at": datetime.utcnow(),
-        "messages": [message]
+        "messages": [message] if message else []
     }
     result = await mongo_db["chat_sessions"].insert_one(doc)
     return {"id": str(result.inserted_id)}

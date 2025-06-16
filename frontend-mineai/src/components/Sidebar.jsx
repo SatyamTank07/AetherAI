@@ -61,7 +61,15 @@ function Sidebar({ onSessionSelect }) {
   // Handle session selection
   const handleSessionSelect = (session) => {
     setShowHistory(false);
-    if (onSessionSelect) onSessionSelect(session);
+    if (onSessionSelect) {
+      onSessionSelect(session);
+      // Save to localStorage for persistence
+      if (session) {
+        localStorage.setItem("currentSession", JSON.stringify(session));
+      } else {
+        localStorage.removeItem("currentSession");
+      }
+    }
   };
 
   return (
@@ -87,6 +95,7 @@ function Sidebar({ onSessionSelect }) {
           fontSize: "1em",
           cursor: "pointer"
         }}
+        // This will trigger App's handler to create a new chat session
         onClick={() => onSessionSelect && onSessionSelect(null)}
       >
         + New Chat
