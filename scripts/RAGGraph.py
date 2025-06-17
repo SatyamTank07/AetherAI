@@ -12,31 +12,36 @@ class GraphState(TypedDict):
     answer: str
 
 class CRagGraph:
-    def __init__(self, memory_manager, namespace):
+    def __init__(self, memory_manager, namespaces):
         _objInit = CInitialize()
-    
         self.embeddings = _objInit.MInitializeEmbeddings()
         self.pinecone = _objInit.MInitializePinecone(config["MineaiIndexName"])
         self.llm = _objInit.MInitializeLLM()
         self.memory_manager = memory_manager
-        self.namespace = namespace
+        self.namespaces = namespaces if isinstance(namespaces, list) else [namespaces]
     
     def MGetContextNode(self):
         def node(state: GraphState):
             query_embedding = self.embeddings.embed_query(state["question"])
             index = self.pinecone.Index(config["MineaiIndexName"])
-            query_result = index.query(
-                vector=query_embedding,
-                top_k=5,
-                include_metadata=True,
-                namespace=self.namespace
-            )
-
-            context_parts = [
-                match["metadata"].get("text", "")
-                for match in query_result.get("matches", [])
-            ]
-            return {"context": "\n\n".join(context_parts)}
+            
+            # Query each namespace and combine results
+            all_contexts = []
+            for namespace in self.namespaces:
+                query_result = index.query(
+                    vector=query_embedding,
+                    top_k=3,  # Reduced per namespace to avoid too much context
+                    include_metadata=True,
+                    namespace=namespace
+                )
+                
+                contexts = [
+                    match["metadata"].get("text", "")
+                    for match in query_result.get("matches", [])
+                ]
+                all_contexts.extend(contexts)
+            
+            return {"context": "\n\n".join(all_contexts)}
         return node
     
     def MGetMemoryNode(self):

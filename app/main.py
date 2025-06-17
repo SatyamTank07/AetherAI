@@ -53,6 +53,7 @@ def ensure_graph_loaded():
         status, namespace = vector.MStoreFileInVectorDB(PDF_PATH)
         print("Loaded namespace:", namespace)
         graph_app = AgentGraphBuilder(namespace).build()
+    return graph_app
 
 
 @app.post("/upload")
@@ -88,18 +89,29 @@ async def upload_file(
     )
     r2_url = f"{os.getenv('R2_PUBLIC_DOMAIN').rstrip('/')}/{file.filename}"
 
-    # Store metadata in MongoDB
+    # Store file in vector database and get namespace
+    vector = CVectorStore()
+    if file.filename.endswith('.pdf'):
+        # Save file temporarily to process with VectorStore
+        temp_path = f"{UPLOAD_DIR}/{file.filename}"
+        with open(temp_path, "wb") as f:
+            f.write(file_content)
+        
+        status, file_namespace = vector.MStoreFileInVectorDB(temp_path)
+        os.remove(temp_path)  # Clean up temp file
+    else:
+        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+
+    # Store minimal metadata in MongoDB
     file_doc = {
-        "user": {
-            "name": name,
-            "email": email,
-            "picture": picture
-        },
+        "email": email,
         "file": {
             "filename": file.filename,
             "url": r2_url,
-            "size": file_size
-        }
+            "size": file_size,
+            "namespace": file_namespace  # Store the namespace
+        },
+        "created_at": datetime.now()
     }
     await mongo_db["uploads"].insert_one(file_doc)
 
@@ -119,10 +131,32 @@ async def set_selected_files(request: Request):
     return {"status": "received"}
 
 @app.post("/chat")
-def chat(request: ChatRequest):
-    ensure_graph_loaded()
-    result = graph_app.invoke({"question": request.question, "selected_files": selected_files})
-    return {"answer": result["answer"]}
+async def chat(request: ChatRequest):
+    global graph_app
+    
+    if not selected_files:
+        # Use default namespace
+        graph_app = ensure_graph_loaded()
+        result = graph_app.invoke({"question": request.question, "selected_files": []})
+        return {"answer": result["answer"]}
+    
+    try:
+        # Get namespaces for selected files
+        file_docs = await mongo_db["uploads"].find(
+            {"file.filename": {"$in": selected_files}}
+        ).to_list(length=None)
+        
+        namespaces = [doc["file"]["namespace"] for doc in file_docs if "namespace" in doc["file"]]
+        
+        if not namespaces:
+            raise HTTPException(status_code=400, detail="No valid files selected")
+        
+        # Create a new graph for the selected namespaces
+        graph_app = AgentGraphBuilder(namespaces).build()
+        result = graph_app.invoke({"question": request.question, "selected_files": selected_files})
+        return {"answer": result["answer"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/auth/google", response_model=UserResponse)
 async def auth_google(authorization: str = Header(...)):
@@ -164,8 +198,10 @@ async def auth_google(authorization: str = Header(...)):
 
 @app.get("/my-files")
 async def get_my_files(email: str = Query(...)):
-    files = await mongo_db["uploads"].find({"user.email": email}).to_list(length=100)
-    # Return only file info, not user info
+    files = await mongo_db["uploads"].find(
+        {"email": email},
+        {"file.filename": 1, "file.url": 1, "file.size": 1, "file.namespace": 1}
+    ).to_list(length=100)
     return {"files": [f["file"] for f in files]}
 
 @app.get("/chat-sessions")

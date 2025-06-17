@@ -20,8 +20,8 @@ class AgentGraphState(TypedDict):
 
 # ----- AgentGraphBuilder Class -----
 class AgentGraphBuilder:
-    def __init__(self, namespace: str):
-        self.namespace = namespace
+    def __init__(self, namespaces):
+        self.namespaces = namespaces if isinstance(namespaces, list) else [namespaces]
         self.config = load_config()
         self.init = CInitialize()
         self.llm = self.init.MInitializeLLM()
@@ -51,7 +51,7 @@ class AgentGraphBuilder:
 
 
     def qa_agent_node(self):
-        graph = CRagGraph(self.memory, self.namespace).MBuildGraph()
+        graph = CRagGraph(self.memory, self.namespaces).MBuildGraph()
         def node(state: AgentGraphState):
             result = graph.invoke({"question": state["question"]})
             return {"answer": result["answer"]}
@@ -78,13 +78,18 @@ class AgentGraphBuilder:
 
     def summarize_node(self):
         index = self.pinecone.Index(self.config["MineaiIndexName"])
-        results = index.query(
-            vector=[0] * 384,
-            namespace=self.namespace,
-            top_k=20,
-            include_metadata=True
-        )
-        all_texts = [m["metadata"].get("text", "") for m in results["matches"]]
+        all_texts = []
+        
+        for namespace in self.namespaces:
+            results = index.query(
+                vector=[0] * 384,
+                namespace=namespace,
+                top_k=10,  # Reduced per namespace
+                include_metadata=True
+            )
+            texts = [m["metadata"].get("text", "") for m in results["matches"]]
+            all_texts.extend(texts)
+        
         document_text = "\n".join(all_texts)
 
         def node(state: AgentGraphState):
