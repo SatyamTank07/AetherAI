@@ -1,64 +1,34 @@
 from pathlib import Path
-from fastapi import FastAPI, Request, UploadFile, File, Header, HTTPException, Form, Query, Body
+from fastapi import FastAPI, Request, UploadFile, File, Header, HTTPException, Form, Query, Body, Response
 from pydantic import BaseModel, EmailStr
 from bson import ObjectId
 from datetime import datetime
 from typing import Optional
 
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi import Query
-from models.schemas import GoogleLoginResponse, GoogleCallbackResponse
-import uvicorn
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi import Query
-from models.schemas import GoogleLoginResponse, GoogleCallbackResponse
-import uvicorn
+import logging
+
 import os
 import boto3
 from botocore.client import Config
 import io
+import google.auth.transport.requests
+import google.oauth2.id_token
 
 from scripts.AgentGraph import AgentGraphBuilder
 from scripts.VectorStore import CVectorStore
 
-# Import new modules we'll create
-from models.schemas import (
+from app.models.schemas import (
     ChatCreateRequest, ChatCreateResponse,
     QueryRequest, QueryResponse,
     FileUploadResponse, FileListResponse,
-    ChatHistoryResponse, HealthResponse
+    ChatHistoryResponse, HealthResponse,
+    UserResponse, GoogleLoginResponse, GoogleCallbackResponse
 )
-from services.file_service import FileService
-from services.auth_service import AuthService
-from database.mongo_client import MongoDBClient
-from config import load_config
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Initialize FastAPI app
-app = FastAPI(
-    title="RAG System API",
-    description="A comprehensive RAG (Retrieval-Augmented Generation) system with PDF processing and chat capabilities",
-    version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc"
-)
-
-# CORS middleware
-# Import new modules we'll create
-from models.schemas import (
-    ChatCreateRequest, ChatCreateResponse,
-    QueryRequest, QueryResponse,
-    FileUploadResponse, FileListResponse,
-    ChatHistoryResponse, HealthResponse
-)
-from services.file_service import FileService
-from services.auth_service import AuthService
-from database.mongo_client import MongoDBClient
-from config import load_config
+from app.services.file_service import FileService
+from app.services.auth_service import AuthService
+from app.database.mongo_client import MongoDBClient
+from scripts.config import load_config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -77,11 +47,18 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Configure this properly for production
-    allow_origins=["*"],  # Configure this properly for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Initialize MongoDB
+mongo_client = MongoDBClient()
+mongo_db = mongo_client.db
+users_col = mongo_db["users"]
+
+# Global variables
+selected_files = []
 
 class ChatRequest(BaseModel):
     question: str

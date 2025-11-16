@@ -1,9 +1,9 @@
-from helper.logConfig import get_logger
+from scripts.helper.logConfig import get_logger
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_pinecone import PineconeVectorStore
-from Initialize import CInitialize
-from config import load_config
+from scripts.Initialize import CInitialize
+from scripts.config import load_config
 from pinecone import Pinecone
 import hashlib
 

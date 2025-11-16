@@ -1,6 +1,6 @@
-from helper.logConfig import get_logger
-from Initialize import CInitialize
-from config import load_config
+from scripts.helper.logConfig import get_logger
+from scripts.Initialize import CInitialize
+from scripts.config import load_config
 
 config = load_config()
 logging = get_logger("Retrival")
