@@ -1,11 +1,12 @@
 # services/auth_service.py
-from jose import JWTError, jwt
+import jwt
+from jwt import PyJWTError as JWTError
 from fastapi import HTTPException, status
 from typing import Dict
 import requests
 import datetime
-from helper.logConfig import get_logger
-from config import load_config
+from scripts.helper.logConfig import get_logger
+from scripts.config import load_config
 
 
 logger = get_logger("AuthService")

@@ -4,8 +4,8 @@ from passlib.context import CryptContext
 from bson import ObjectId
 from datetime import datetime
 from typing import List, Dict, Optional
-from helper.logConfig import get_logger
-from config import load_config
+from scripts.helper.logConfig import get_logger
+from scripts.config import load_config
 
 logger = get_logger("MongoDBClient")
 

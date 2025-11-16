@@ -1,7 +1,7 @@
-from helper.logConfig import get_logger
-from Initialize import CInitialize
-from Retrival import CRetrival
-from config import load_config
+from scripts.helper.logConfig import get_logger
+from scripts.Initialize import CInitialize
+from scripts.Retrival import CRetrival
+from scripts.config import load_config
 from langchain.prompts import PromptTemplate
 
 config = load_config()

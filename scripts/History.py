@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 from datetime import datetime, timezone
-from config import load_config
-from helper.logConfig import get_logger
+from scripts.config import load_config
+from scripts.helper.logConfig import get_logger
 
 logging = get_logger("History")
 class CHistory:

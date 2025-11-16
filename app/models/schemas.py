@@ -164,3 +164,8 @@ class GoogleCallbackResponse(BaseModel):
     email: str
     username: str
     message: str
+
+class UserResponse(BaseModel):
+    email: str
+    name: str
+    picture: str

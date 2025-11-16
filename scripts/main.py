@@ -1,10 +1,10 @@
 import os
 from typing import Optional, Dict, Any
-from helper.logConfig import get_logger
+from scripts.helper.logConfig import get_logger
 from History import CHistory
 from QueryModule import CQuery
 from VectorStore import CVectorStore
-from config import load_config
+from scripts.config import load_config
 
 logger = get_logger("MainChatbot")
 
