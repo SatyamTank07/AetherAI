@@ -75,7 +75,7 @@ function Sidebar({ onSessionSelect }) {
   return (
     <div className="sidebar" style={{position: "relative"}}>
       <div className="sidebar-header">
-        <h2>MineAI Chat</h2>
+        <h2>AetherAI</h2>
         <AuthSection />
       </div>
 

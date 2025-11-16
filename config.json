@@ -1,6 +1,6 @@
 {
     "MineaiIndexName": "mineai",
     "EmbeddingModel": "sentence-transformers/all-MiniLM-L6-v2",
-    "LLM_Model": "llama3-8b-8192",
+    "LLM_Model": "openai/gpt-oss-20b",
     "NameSpace": "conversation-history"
 }
