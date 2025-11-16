@@ -6,9 +6,10 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi.middleware.cors import CORSMiddleware
-import google.oauth2.id_token
-import google.auth.transport.requests
-from motor.motor_asyncio import AsyncIOMotorClient
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Query
+from models.schemas import GoogleLoginResponse, GoogleCallbackResponse
+import uvicorn
 import os
 import boto3
 from botocore.client import Config
@@ -17,21 +18,35 @@ import io
 from scripts.AgentGraph import AgentGraphBuilder
 from scripts.VectorStore import CVectorStore
 
-app = FastAPI()
-selected_files = []
+# Import new modules we'll create
+from models.schemas import (
+    ChatCreateRequest, ChatCreateResponse,
+    QueryRequest, QueryResponse,
+    FileUploadResponse, FileListResponse,
+    ChatHistoryResponse, HealthResponse
+)
+from services.file_service import FileService
+from services.auth_service import AuthService
+from database.mongo_client import MongoDBClient
+from config import load_config
 
-mongo_client = AsyncIOMotorClient(os.getenv("MONGODB_URI"))
-mongo_db = mongo_client["mineai"]
-users_col = mongo_db["users"]
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-class UserResponse(BaseModel):
-    email: EmailStr
-    name: str
-    picture: str
-    
+# Initialize FastAPI app
+app = FastAPI(
+    title="RAG System API",
+    description="A comprehensive RAG (Retrieval-Augmented Generation) system with PDF processing and chat capabilities",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
+
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # You can replace with actual domain
+    allow_origins=["*"],  # Configure this properly for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
