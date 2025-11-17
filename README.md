@@ -1,12 +1,54 @@
-# MineAi
-- MineAi is an AI-powered chat application that enables users to upload PDF documents and interact with them through natural language queries. Leveraging FastAPI for the backend and React for the frontend, MineAi integrates with vector databases like Pinecone to provide intelligent document querying and summarization capabilities.
+# AetherAI
+- AetherAI is an AI-powered chat application that enables users to upload PDF documents and interact with them through natural language queries. Leveraging FastAPI for the backend and React for the frontend, AetherAI integrates with vector databases like Pinecone to provide intelligent document querying and summarization capabilities.
 
 ## 🚀 Features
 - Document Upload: Users can upload PDF files, which are then stored in a vector database for efficient querying.
 - Interactive Chat: Engage in a conversational interface to ask questions about the uploaded documents.
 - Dynamic Routing: Automatically routes queries to appropriate agents based on context, such as QA or summarization.
 
-## 🛠️ Installation
+## 🐳 Docker Setup (Recommended)
+### Prerequisites
+- Docker and Docker Compose installed
+- Pinecone API Key
+- Groq API Key (for AI)
+- Google Client ID (for authentication)
+- R2 credentials (for file storage)
+
+### 1) Clone the Repository and enter directory:
+```
+git clone https://github.com/SatyamTank07/AetherAI.git
+cd AetherAI
+```
+
+### 2) Create Environment Files:
+Copy the .env.example to .env in backend/ and fill in your values:
+```
+cd backend
+cp .env.example .env
+# Edit .env with your actual API keys and credentials
+```
+
+### 3) Run with Docker Compose:
+```
+docker-compose up --build
+```
+The application will be available at:
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:8000
+
+### 4) Alternative: Run specific services
+```
+# Run all services
+docker-compose up
+
+# Run in background
+docker-compose up -d
+
+# Stop services
+docker-compose down
+```
+
+## 🛠️ Manual Installation (Alternative)
 ### Prerequisites
 - Python 3.10+
 - Node.js 16+ and npm
@@ -16,8 +58,8 @@
 ## Backend Setup
 ### 1) Clone the Repository:
 ```
-git clone https://github.com/SatyamTank07/MineAi.git
-cd MineAi
+git clone https://github.com/SatyamTank07/AetherAI.git
+cd AetherAI
 ```
 
 ### 2) Create a Virtual Environment:

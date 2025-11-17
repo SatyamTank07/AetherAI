@@ -1,0 +1,33 @@
+version: '3.8'
+name: aetherai
+
+services:
+  backend:
+    image: aetherai/backend:latest
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/Data:/app/Data
+      - ./backend/logs:/app/logs
+    env_file:
+      - ./backend/.env
+    networks:
+      - aetherai-network
+
+  frontend:
+    image: aetherai/frontend:latest
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - aetherai-network
+
+volumes:
+  mongo_data:
+
+networks:
+  aetherai-network:
+    driver: bridge
